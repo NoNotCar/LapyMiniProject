@@ -1,3 +1,8 @@
 import visualisation
+import scratch
 
-visualisation.rollout([1]*500,0.02)
+T = 2.0
+n = 40
+dt = T/n
+
+visualisation.show_trajectory(scratch.optimise_trajectory(T=T,n=n),dt)
