@@ -32,6 +32,7 @@ def pycollo_optimise(T=2.0,max_force=20.0,max_disp=2.0):
     phase.bounds.control_variables = {
         dynamics.force: [-max_force,max_force]
     }
+    phase.bounds.integral_variables = [[0, 100]]
     phase.guess.time = [0, T]
     phase.guess.state_variables = [[0, max_disp/2], [0, np.pi], [0, 0], [0, 0]]
     phase.guess.control_variables = [[0, 0]]
