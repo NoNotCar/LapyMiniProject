@@ -2,7 +2,7 @@ import dynamics
 import numpy as np
 import scipy.optimize as optimise
 
-def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0):
+def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0,silent=False):
     dt = T/n
     # decision variables x = [s_0[0]...s_0[3],f_0...]
     smxf = np.square(max_force)
@@ -39,5 +39,6 @@ def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0):
         {"type": "eq", "fun": lambda x: x[0:4]}
     ]
     result=optimise.minimize(objective,x0,constraints=collocs+forces+finals)
-    print(result)
+    if not silent:
+        print(result)
     return result["x"]

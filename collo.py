@@ -3,7 +3,7 @@ import dynamics
 import sympy as sym
 import numpy as np
 
-def pycollo_optimise(T=2.0,max_force=20.0,max_disp=2.0):
+def pycollo_optimise(T=2.0,max_force=20.0,max_disp=2.0,silent=False):
     problem = pycollo.OptimalControlProblem("CartPole swing-up")
     phase = problem.new_phase("SwingUp",[dynamics.x,dynamics.theta,dynamics.v,dynamics.omega],dynamics.force)
     phase.state_equations = dynamics.cart_state_equations
@@ -39,7 +39,7 @@ def pycollo_optimise(T=2.0,max_force=20.0,max_disp=2.0):
     phase.guess.integral_variables = [0]
 
     problem.initialise()
-    problem.solve(True)
+    problem.solve(not silent)
     return problem
 
 
