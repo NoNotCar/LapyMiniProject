@@ -5,17 +5,28 @@ import numpy as np
 import scipy.optimize as optimise
 import sympy as sym
 
-def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0,silent=False):
+
+def s(x, t):
+    return x[t * 5:t * 5 + 4]
+
+def sf(x,t):
+    return x[t*5:t*5+5]
+
+def f(x, t):
+    return dynamics.x_dot(s(x, t), x[t * 5 + 4])
+
+def rescale(x):
+    return np.array([0.5*(sf(x,t//2)+sf(x,t//2+1)) if t%2 else sf(x,t//2) for t in range(len(x)//5*2-1)])
+def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0,silent=False,rescales=0,guess=None):
+    if guess is not None:
+        n=len(guess)
     dt = T/n
     decision_variables = sympy.symbols(" ".join(f"x_{t} theta_{t} v_{t} omega_{t} force_{t}" for t in range(n)))
     decision_array = sympy.Array(decision_variables)
     smxf = np.square(max_force)
     smxd = np.square(max_disp)
 
-    def s(x,t):
-        return x[t*5:t*5+4]
-    def f(x,t):
-        return dynamics.x_dot(s(x,t), x[t * 5 + 4])
+
     objective = 0.5*(decision_variables[4]**2+decision_variables[-1]**2)+sum(f**2 for f in decision_variables[9:-1:5])
     def colloc_constraint(x,t):
         return 0.5*dt*(f(x,t)+f(x,t+1))-s(x,t+1)+s(x,t)
@@ -31,7 +42,7 @@ def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0,silent=False):
         return x[-2]
 
     jacobian = sym.derive_by_array(objective,decision_array)
-    x0 = np.linspace(np.array([0,0,0,0,0]),np.array([max_disp,np.pi,0,0,0]),n)
+    x0 = guess if guess is not None else np.linspace(np.array([0,0,0,0,0]),np.array([max_disp,np.pi,0,0,0]),n)
     x0 = x0.flatten()
     collocs = [{"type":"eq","fun":colloc_constraint,"args":[t]} for t in range(n-1)]
     forces = [{"type":"ineq","fun":force_constraint,"args":[t]} for t in range(n)]
@@ -49,4 +60,6 @@ def optimise_trajectory(n=20,T=2.0,max_force=20.0,max_disp=2.0,silent=False):
         constraints=collocs+forces+finals)
     if not silent:
         print(result)
+    if rescales>0:
+        return optimise_trajectory(T=T,max_force=max_force,max_disp=max_disp,silent=silent,rescales=rescales-1,guess=rescale(result["x"]))
     return result["x"]
