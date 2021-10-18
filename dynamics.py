@@ -1,6 +1,8 @@
 import numpy as np
 import sympy as sym
 
+from sympy.utilities.autowrap import ufuncify
+
 # constants
 
 # cart mass
@@ -26,6 +28,9 @@ v = sym.Symbol("v")
 omega = sym.Symbol("omega")
 force = sym.Symbol("force")
 
+all_variables = [x,theta,v,omega,force]
+state_variables = [x,theta,v,omega]
+
 cart_state_equations = {
     x: v,
     theta: omega,
@@ -33,13 +38,22 @@ cart_state_equations = {
     omega: -(l * m2 * sym.cos(theta) * sym.sin(theta) * omega**2 + force * sym.cos(theta) + (m1 + m2) * g * sym.sin(theta)) / (l * m1 + l * m2 * (1 - sym.cos(theta)**2))
 }
 
-all_variables = [x,theta,v,omega,force]
-state_variables = [x,theta,v,omega]
+state_array = sym.Array([cart_state_equations[s] for s in state_variables])
 
-numpied = [sym.lambdify(all_variables,cart_state_equations[s],"numpy") for s in state_variables]
+numpied = sym.lambdify(all_variables,state_array,"numpy",cse=True)
+ufv = ufuncify(all_variables,cart_state_equations[v])
+ufo = ufuncify(all_variables,cart_state_equations[omega])
 
+def fast_x_dot(x,t,v,o,f):
+    xd = np.zeros(4)
+    xd[0]=v
+    xd[1]=o
+    xd[2]=ufv(x,t,v,o,f)
+    xd[3]=ufo(x,t,v,o,f)
+    return xd
 def x_dot(s, f):
-    return np.array([numpied[i](*s,f) for i,_ in enumerate(s)])
+    return np.array(numpied(*s,f))
+
 
 def timestep(s, f, dt):
     return s + x_dot(s, f) * dt

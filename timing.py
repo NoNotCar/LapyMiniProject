@@ -1,16 +1,27 @@
 import timeit
-import scratch
-import collo
-import visualisation
+from matplotlib import pyplot as plt
 
 T = 2.0
-n = 13
-rescales = 2
+n = 45
 
-print("Timing solution from scratch...")
-print(timeit.timeit("scratch.optimise_trajectory(T=2.0,n=13,rescales=2,silent=True)","import scratch", number=1))
-print("Sanity checking - recalculating solution")
-scratch_solution = scratch.optimise_trajectory(T=T,n=n,rescales=rescales,silent=True)
-print("Calculating solution using pycollo...")
-pycollo_solution = collo.pycollo_optimise(T=T,silent=True)
-visualisation.compare_solutions(scratch_solution, T/(len(scratch_solution)//5), pycollo_solution)
+options = [
+    ("normal",{}),
+    ("ufuncs", {"fast":True}),
+    ("2 rescales",{"rescales":2}),
+    ("no jacobian",{"no_jac":True}),
+    ("lru cache",{"lru":True})
+
+]
+
+results = []
+for name,o in options:
+    print(f"Now timing: {name}...")
+    results.append(timeit.timeit(f"scratch.optimise_trajectory(n=n,T=T,silent=True,**{str(o)})","import scratch",number=1,globals=globals()))
+
+xs = range(len(options))
+plt.bar(xs,results)
+plt.xticks(xs,[name for name,_ in options])
+plt.ylabel("Time (s)")
+plt.xlabel("Optimisation")
+plt.title(f"Timings for n={n}")
+plt.show()
